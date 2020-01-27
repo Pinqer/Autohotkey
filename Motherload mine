@@ -1,0 +1,396 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+CoordMode, Mouse, Relative
+#SingleInstance, force
+
+RandomBezier( X0, Y0, Xf, Yf, O="" ) {
+    Time := RegExMatch(O,"i)T(\d+)",M)&&(M1>0)? M1: 200
+    RO := InStr(O,"RO",0) , RD := InStr(O,"RD",0)
+    N:=!RegExMatch(O,"i)P(\d+)(-(\d+))?",M)||(M1<2)? 2: (M1>19)? 19: M1
+    If ((M:=(M3!="")? ((M3<2)? 2: ((M3>19)? 19: M3)): ((M1=="")? 5: ""))!="")
+        Random, N, %N%, %M%
+    OfT:=RegExMatch(O,"i)OT(-?\d+)",M)? M1: 100, OfB:=RegExMatch(O,"i)OB(-?\d+)",M)? M1: 100
+    OfL:=RegExMatch(O,"i)OL(-?\d+)",M)? M1: 100, OfR:=RegExMatch(O,"i)OR(-?\d+)",M)? M1: 100
+    MouseGetPos, XM, YM
+    If ( RO )
+        X0 += XM, Y0 += YM
+    If ( RD )
+        Xf += XM, Yf += YM
+    If ( X0 < Xf )
+        sX := X0-OfL, bX := Xf+OfR
+    Else
+        sX := Xf-OfL, bX := X0+OfR
+    If ( Y0 < Yf )
+        sY := Y0-OfT, bY := Yf+OfB
+    Else
+        sY := Yf-OfT, bY := Y0+OfB
+    Loop, % (--N)-1 {
+        Random, X%A_Index%, %sX%, %bX%
+        Random, Y%A_Index%, %sY%, %bY%
+    }
+    X%N% := Xf, Y%N% := Yf, E := ( I := A_TickCount ) + Time
+    While ( A_TickCount < E ) {
+        U := 1 - (T := (A_TickCount-I)/Time)
+        Loop, % N + 1 + (X := Y := 0) {
+            Loop, % Idx := A_Index - (F1 := F2 := F3 := 1)
+                F2 *= A_Index, F1 *= A_Index
+            Loop, % D := N-Idx
+                F3 *= A_Index, F1 *= A_Index+Idx
+            M:=(F1/(F2*F3))*((T+0.000001)**Idx)*((U-0.000001)**D), X+=M*X%Idx%, Y+=M*Y%Idx%
+        }
+        MouseMove, %X%, %Y%, 0
+        Sleep, 1
+    }
+    MouseMove, X%N%, Y%N%, 0
+    Return N+1
+}
+
+sleep(x, y) {
+	random, rand, x, y
+	sleep, %rand%
+}
+
+Movedrop(x, y) {
+	RandomBezier( 0, 0, x, y, "T250 RO OT1 OB1 OL1 OR1 P2-4" )
+}
+Move(x, y) {
+	Random, OvershootChance, 1, 3
+	Random, OvershootRand, 20, 50
+	Random, BezierType, 1, 4
+	Random, BezierSpeed, 750,1500
+	MouseGetPos, varX, varY
+
+	if (varX > x) 
+		overshootX := x-OvershootRand
+	else
+		overshootX := x+OvershootRand
+
+	if (varY > y)
+		overshootY := y-OvershootRand
+	else 
+		overshootY := y+OvershootRand
+
+	if (BezierType <= 3) {
+		if (OvershootChance <= 2) {
+			RandomBezier( 0, 0, x, y, "T750 RO OT3 OB5 OL3 OR1 P3-6" )
+		}
+		else {
+			RandomBezier( 0, 0, overshootX, overshootY, "T750 RO OT3 OB5 OL3 OR1 P4-7" )
+			RandomBezier( 0, 0, x, y, "T750 RO OT3 OB5 OL3 OR1 P3-6" )
+		}
+	}
+	else {
+		if (OvershootChance <= 2) {
+			RandomBezier( 0, 0, x, y, "T1250 RO OT15 OB15 OL15 OR15 P5-8")	
+	}
+		else {
+			RandomBezier( 0, 0, overshootX, overshootY, "T1250 RO OT10 OB10 OL10 OR10 P9-2")
+			RandomBezier( 0, 0, x, y, "T1250 RO OT15 OB15 OL15 OR15 P5-8")
+		}
+	}
+}
+
+F1::
+start:
+loop {
+pink = 0xFF00FF
+red = 0xFF0000
+green = 0x00FF00
+loopAmount = 10
+Random, randY1, 3, 7
+Random, randY2, 3, 7
+random, randX1, 1, 5
+
+
+ore:
+PixelSearch, Px, Py, 695, 457, 729, 487, 0xFF00FF, 25, RGB fast
+if (ErrorLevel = 0)
+	goto, postloop
+PixelSearch, Px, Py, 10, 95, 333, 360, 0xFF00FF, 1, RGB Fast ; serach for rock
+if (ErrorLevel = 0) {
+Move(Px, Py+randX1+randY1)
+Sleep(150,400)
+Click
+PixelSearch, Px, Py, 695, 457, 729, 487, 0xFF00FF, 1, RGB fast
+if (ErrorLevel = 0) {
+	Gosub, drop
+}
+}
+else {
+	Random, worldX, 774, 953
+	Random, worldY, 178, 503
+	Move(worldX, worldY)
+	Sleep(150,400)
+	Click
+	Sleep(70,120)
+	Click
+	Sleep(70,120)
+	Click
+	Sleep(5500,6000)
+	random, randX, 637, 654
+	random, randY, 199, 221
+	Move(randX,randY)
+	Sleep(100,200)
+	Click
+	goto, ore
+}
+count := 0
+count2 := 0
+loop {
+PixelSearch, Px, Py, 695, 457, 729, 487, 0xFF00FF, 25, RGB fast
+if (ErrorLevel = 0)
+	goto, postloop
+else {
+PixelSearch, Px, Py, 38, 53, 114, 73, 0x00FF00, 25, Fast ; check if mining
+if (ErrorLevel = 0) {
+	loop {
+		PixelSearch, Px, Py, 43, 53, 68, 71, 0xFF0000, 25, RGB fast
+		if (ErrorLevel = 0) {
+			count++ 
+			Sleep(100,150)
+			if (count > 20)
+				goto, ore
+			}
+		else {
+			Count := 0
+		}
+	}
+}
+else {
+	Sleep(500,600)
+	count2++
+	if (count2 > 10) {
+		count2 := 0
+		goto, ore
+	}
+}
+}
+}
+
+postloop:
+
+PixelSearch, Px1, Py1, 356, 36, 456, 182, 0xFF00FF, 25, RGB Fast ; Hopper
+Random, y, 1,7
+random, x, 1,6
+Move(Px1+y, Py1+x)
+Sleep(150,400)
+Click
+
+Sleep(11000,12000)
+
+Random, y2, 1,7
+random, x2, 1,7
+PixelSearch, Px2, Py2, 228, 325, 327, 398, 0xFF00FF, 25, RGB Fast ; bag
+if (ErrorLevel = 0) {
+Move(Px2+x2, Py2+y2)
+Sleep(2000,3000)
+Click
+Sleep(7000,8000)
+}
+
+random, randY2, 1,8
+random, randX2, 1,5
+PixelSearch, Px, Py, 10, 95, 333, 360, 0xFF00FF, 25, RGB Fast ; serach for rock
+if (ErrorLevel = 0) {
+Move(Px+randX2, Py+randY2)
+Sleep(150,400)
+Click
+Gosub, drop
+sleep(2500,3000)
+}
+}
+Return
+F3::
+drop:
+
+ 
+Random x2, 616,639
+Random y2, 245, 266
+ 
+Random x3, 655, 679
+Random y3, 246, 263
+ 
+Random x4, 700, 723
+Random y4, 246, 268
+ 
+ 
+Random x5, 573, 595
+Random y5, 278, 305
+ 
+Random x6, 614, 639
+Random y6, 295, 306
+ 
+Random x7, 657, 681
+Random y7, 280, 307
+ 
+Random x8, 698, 721
+Random y8, 278, 306
+ 
+ 
+ 
+Random x9, 573, 595
+Random y9, 316, 343
+ 
+Random x10, 614, 640
+Random y10, 315, 341
+ 
+Random x11, 657, 681
+Random y11, 317, 342
+ 
+Random x12, 698, 721
+Random y12, 316, 341
+ 
+ 
+ 
+Random x13, 573, 597
+Random y13, 351, 378
+ 
+Random x14, 614, 640
+Random y14, 352, 377
+ 
+Random x15, 657, 681
+Random y15, 353, 376
+ 
+Random x16, 698, 721
+Random y16, 352, 379
+ 
+ 
+ 
+Random x17, 573, 597
+Random y17, 390, 413
+ 
+Random x18, 614, 640
+Random y18, 390, 412
+ 
+Random x19, 657, 681
+Random y19, 390, 411
+ 
+Random x20, 698, 721
+Random y20, 389, 410
+ 
+ 
+ 
+Random x21, 573, 597
+Random y21, 424, 448
+ 
+Random x22, 614, 640
+Random y22, 423, 447
+ 
+Random x23, 657, 681
+Random y23, 423, 446
+ 
+Random x24, 698, 721
+Random y24, 424, 445
+ 
+ 
+ 
+Random x25, 573, 597
+Random y25, 460, 483
+ 
+Random x26, 614, 640
+Random y26, 461, 482
+ 
+Random x27, 657, 681
+Random y27, 462, 481
+ 
+Random x28, 698, 721
+Random y28, 462, 481
+ 
+ 
+ 
+send {shift down}
+ 
+ 
+ 
+sleep(100,200)
+ 
+
+Movedrop(x2,y2)
+click  
+sleep(30,100)
+Movedrop(x3,y3)
+click
+sleep(30,100)
+Movedrop(x4,y4)
+click
+sleep(30,100)
+Movedrop(x5,y5)
+click
+sleep(30,100)
+Movedrop(x6,y6)
+click
+sleep(30,100)
+Movedrop(x7,y7)
+click
+sleep(30,100)
+Movedrop(x8,y8)
+click
+sleep(30,100)
+Movedrop(x9,y9)
+click
+sleep(30,100)
+Movedrop(x10,y10)
+click
+sleep(30,100)
+Movedrop(x11,y11)
+click
+sleep(30,100)
+Movedrop(x12,y12)
+click
+sleep(30,100)
+Movedrop(x13,y13)
+click
+sleep(30,100)
+Movedrop(x14,y14)
+click
+sleep(30,100)
+Movedrop(x15,y15)
+click
+sleep(30,100)
+Movedrop(x16,y16)
+click
+sleep(30,100)
+Movedrop(x17,y17)
+click
+sleep(30,100)
+Movedrop(x18,y18)
+click
+sleep(30,100)
+Movedrop(x19,y19)
+click
+sleep(30,100)
+Movedrop(x20,y20)
+click
+sleep(30,100)
+Movedrop(x21,y21)
+click
+sleep(30,100)
+Movedrop(x22,y22)
+click
+sleep(30,100)
+Movedrop(x23,y23)
+click
+sleep(30,100)
+Movedrop(x24,y24)
+click
+sleep(30,100)
+Movedrop(x25,y25)
+click
+sleep(30,100)
+Movedrop(x26,y26)
+click
+sleep(30,100)
+Movedrop(x27,y27)
+click
+sleep(30,100)
+Movedrop(x28,y28)
+click
+sleep(30,100)
+ 
+send {shift up}
+Return
+
+F10::RELOAD
+ESC::EXITAPP
